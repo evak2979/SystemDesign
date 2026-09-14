@@ -6,7 +6,7 @@ over as a separate file in `docs/` when she's ready for it.
 | Stage | File | Status |
 |---|---|---|
 | 1 — Contracts | `README.md` | Merged in [#1](https://github.com/evak2979/SystemDesign/pull/1) |
-| 2 — Two TVs and a universal remote, test-first | `docs/STAGE-2.md` | Ready to hand over |
+| 2 — Two TVs, a universal remote, and the battery | `docs/STAGE-2.md` | Ready to hand over |
 | 3 — The factory | below | Not written up yet |
 | 4 — Fakes and test doubles | below | Not written up yet |
 | 5 — Over HTTP | below | Not written up yet |
@@ -22,7 +22,7 @@ practice — it's introduced because the previous stage got annoying without it.
 | Stage | She builds | The thing it teaches |
 |---|---|---|
 | 1 | Two interfaces | A contract says *what*, never *how* |
-| 2 | Samsung, LG, a universal remote — test-first | Same contract, different machines; and a test you haven't seen fail isn't a test |
+| 2 | Samsung, LG, a universal remote, a battery — test-first | Same contract, different machines; a test you haven't seen fail isn't a test; and who builds a dependency decides who can test it |
 | 3 | A factory | Something must choose, and only one place should know the concrete types |
 | 4 | A fake television | A fake is just another implementation — which is why interfaces make testing possible |
 | 5 | HTTP endpoints | Wiring it into a real application |
@@ -89,6 +89,46 @@ isn't there, and the fix is to change the interface, not to special-case the rem
 
 **Part E is the payoff.** She writes a third TV and the remote drives it unchanged. If
 she leaves Stage 2 with one thing, it's that. Don't let it pass without naming it.
+
+### Part F — the battery, as a diagnostic
+
+This part is deliberately underspecified. The brief says batteries can be inserted,
+removed, and run down, and then stops. What she does with that tells you how much of
+Part D she actually absorbed, as opposed to copied.
+
+**Read her answer like this:**
+
+| What she does | What it means |
+|---|---|
+| `new Battery()` inside the remote | She followed the constructor pattern for the TV because she was told to, not because she understood it. The most common outcome, and the most useful one to catch. |
+| Battery passed into the constructor, next to the television | She generalised the pattern herself. This is the good outcome. |
+| An `InsertBattery(...)` method on `IRemoteControl` | Also good, and arguably better — she's modelled the physical act, and can swap a battery at runtime. Ask why she chose it over the constructor. |
+| A setter or method that exists only so tests can drain the battery | She's felt the pain and worked around it instead of fixing it. Worth pulling on — that method is the design asking to be changed. |
+
+**The pain is doing the teaching, not you.** Her own `HasBattery` sad path from Part D
+comes back here: she has to write "a flat battery does nothing" as a test, and if the
+remote builds its own battery she cannot arrange a flat one. The brief tells her to
+notice that difficulty rather than fight it. Let her hit it before you say anything.
+
+**On "should Battery be an interface?" — don't pre-load the answer.** It is genuinely
+not automatic, and telling her "yes" would undercut the rule she just learned in Part C:
+an interface earns its place at the *second implementation*. The honest criterion is
+whether a battery **does** anything:
+
+- If it only holds a charge level, it's data — a **model**, and an `IBattery` with one
+  implementation forever is exactly the ceremony this whole repo is arguing against.
+- If it drains as it's used, and an alkaline drains differently from a rechargeable,
+  there's real behaviour and a real second implementation, and the interface pays for
+  itself just as `ITelevision` did.
+
+Both answers can be right. Make her justify whichever she picks — the justification
+is the assessment, not the choice. If she reaches for `IBattery` reflexively because
+"interfaces are good practice", that's the same mistake as hardcoding, pointing the
+other way.
+
+**A good follow-up if she's flying:** "you've got two different rechargeable batteries
+that drain at different rates — what changes?" That's the Part C lesson arriving in a
+domain she wasn't expecting it in.
 
 ### On printing
 

@@ -201,6 +201,74 @@ for this moment. Sit with it — if it seems obvious now, that's the point.
 
 ---
 
+## Part F — Someone wants to change the battery
+
+Your remote works. Now the requirements change, which is what requirements do.
+
+> **The remote's battery can be taken out, put in, and runs down as it's used.**
+> A remote with no battery in it does nothing. A remote whose battery is flat
+> does nothing either.
+
+That's the whole brief. How you build it is the exercise.
+
+### The one rule
+
+**Write the test first.** As always — but here it matters more than usual, because
+the test is what will tell you whether your design is any good.
+
+Start with this one, in words: *"a remote with a flat battery does not change the
+television."* You already wrote something close to it in Part D, using `HasBattery`.
+
+Now try to write it again, for real. Somewhere in that test you will need a flat
+battery. **Pay close attention to how easy or hard that is to arrange.** If you find
+yourself unable to set up the situation you want to test, that is not a problem with
+the test. It is the design telling you something, and the whole point of this part is
+to hear it.
+
+### Questions to answer before you write the code
+
+Write your answers down — they matter more than the code, and your mentor will ask.
+
+1. **Where does the battery come from?** You already solved this exact problem once
+   in Part D, for the television. Does the same answer apply here? Why, or why not?
+2. **Should `Battery` be an interface, or an ordinary class?** Be careful — this is
+   not automatically "interface". Use the test you learned in Part C:
+
+   > An interface earns its place when there is more than one kind of the thing,
+   > behaving differently.
+
+   So: is there a second kind of battery? Does a battery *do* anything, or does it
+   just hold a number? If it only holds a charge level and nothing else, it might
+   be a **model**, not an interface — and wrapping it in one would be exactly the
+   ceremony you were warned about.
+
+   Either answer can be right. An answer you can't justify can't.
+3. **Does `IRemoteControl` need to change?** Is "putting a battery in" something you
+   can do to *any* remote control — in which case it belongs on the contract — or is
+   it something you do once when the remote is built? Both are defensible designs,
+   and they lead to different code.
+4. **What does a flat battery do to `HasBattery`?** That property is already on your
+   contract. Does it still mean the same thing now that batteries run down?
+
+### Things that should make you suspicious
+
+- If `UniversalRemoteControl` contains `new Battery()`, ask yourself how a test is
+  supposed to make that battery go flat.
+- If your answer involves adding a method whose only purpose is to let a test change
+  something, stop. Tests shouldn't need special access. Needing it means the thing
+  should have come from outside in the first place.
+- If the remote now has *two* things coming in from outside, that's not a problem —
+  that's normal, and it has a name you already met in Part D.
+
+### You're done with this part when
+
+- A flat battery genuinely stops the remote working, proven by a test.
+- Setting up a flat battery in a test is *easy*, and doesn't require any method that
+  exists only for testing.
+- You can explain your answer to question 2 without using the word "best practice".
+
+---
+
 ## You're done when
 
 - `dotnet test SystemDesign.sln` is green.
@@ -209,7 +277,10 @@ for this moment. Sit with it — if it seems obvious now, that's the point.
 - Samsung and LG genuinely behave differently — someone reading the tests can tell
   them apart without looking at the classes.
 - `UniversalRemoteControl` contains no brand name at all.
+- A flat battery stops the remote working, and that's covered by a test that was
+  straightforward to set up.
 - You can explain why a hardcoded `return true` passing a test is useful information.
+- You can justify whether the battery is an interface or a plain class — either way.
 
 Open a PR when you get there.
 
