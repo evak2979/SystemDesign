@@ -131,58 +131,89 @@ rather than the behaviour.
 
 ---
 
-## Part D — The universal remote
+## Part D — Design the universal remote
 
-Create `UniversalRemoteControl` in `Implementations/`, implementing `IRemoteControl`.
+This part is different. Nobody is going to tell you what the code looks like.
 
-It takes an `ITelevision` in its constructor and keeps it:
+> **We need a universal remote control. Design it.**
 
-```csharp
-public class UniversalRemoteControl : IRemoteControl
-{
-    private readonly ITelevision _television;
+It implements `IRemoteControl`, it lives in `Implementations/`, and it has to work with
+**any** television — including televisions nobody has written yet.
 
-    public UniversalRemoteControl(ITelevision television)
-    {
-        _television = television;
-    }
+That's the brief. The design is yours.
 
-    // ...
-}
-```
-
-Passing a thing's dependencies in from outside instead of letting it build its own has
-a name — **dependency injection**. That's all it is. You've just done it.
-
-### The rule that makes it universal
+### The one hard rule
 
 > **`UniversalRemoteControl` must not contain the words `Samsung` or `LG` anywhere.**
 
 Not in a type, not in an `if`, not in a comment. The moment it needs to know which
 television it's holding, it isn't universal any more — it's two remotes wearing a coat.
 
-If you find yourself wanting to write `if (tv is SamsungTelevision)`, stop. That itch
-means something belongs on the contract that isn't there yet. Bring it to your mentor
-rather than working around it.
+This rule is the only thing constraining your design, and it's worth understanding why
+it's so restrictive. It rules out the most obvious idea — having the remote make itself
+a television — because any television it made would have to be a *particular brand*.
 
-### Things to work out
+### The question you have to answer
+
+**Where does the remote's television come from?**
+
+Think it through properly before writing anything. There is more than one workable
+answer, and a few that look workable until you try to use them.
+
+Some things to judge your ideas against:
+
+- **Can you test it?** You'll want a test that presses a button and checks the television
+  changed. Whatever you design has to let a test decide which television is involved.
+- **Does it survive a new brand?** A television invented next year, by someone who's
+  never seen your remote — does your design still work, with no changes to the remote?
+- **Can one remote drive a different television later?** Should it be able to? That's
+  a design decision, not a fact — but decide it deliberately rather than by accident.
+- **Does the remote need to know anything about the television beyond the contract?**
+  If yes, that's worth a conversation with your mentor before you build it.
+
+### Let the test tell you
+
+Here's the useful trick, and it's the real reason test-first helps with design rather
+than just catching bugs:
+
+**Write the test before you write the class.** In that test you'll have to create a
+`UniversalRemoteControl` and somehow arrange for it to have a television. The moment
+you type that line, you're designing — because a test is the first thing that ever has
+to *use* what you built.
+
+If the test is awkward to write, your design is awkward to use. You'll have found that
+out in thirty seconds instead of a fortnight.
+
+### Things to work out along the way
 
 - `PressPower()` is a single button, but `ITelevision` has separate `TurnOn()` and
-  `TurnOff()`. So the remote has to decide which to call. Where does it find out
-  whether the TV is currently on? (You already put that on the contract.)
+  `TurnOff()`. So the remote has to decide which to call. Where does it find out whether
+  the television is currently on? (You already put that on the contract.)
 - `HasBattery` is on your interface. What should pressing a button do when it's `false`?
   You invented that rule in Stage 1 — now you have to honour it. Test it.
 
-That battery case is a proper sad path, and it's a good one: **pressing a button on a
-dead remote must not change the television.** Write that test.
+That battery case is a proper sad path, and a good one: **pressing a button on a dead
+remote must not change the television.** Write that test.
 
 ### Testing the remote
 
 Your remote tests need *a* television. For now, use a real `SamsungTelevision` — press
-the button, assert the TV changed. That's the straightforward route, and it works.
+the button, assert the television changed. That's the straightforward route and it works.
 
 Keep a note of anything that feels awkward about it. Stage 4 is about exactly that
 awkwardness, and it'll mean more if you've felt it first.
+
+### When it's working
+
+Go and look at what you ended up with, and at how the television gets into the remote.
+
+If your answer was "it's handed one, from outside" — that has a name. It's called
+**dependency injection**, it is one of the most common patterns in professional .NET
+code, and you just arrived at it on your own because the constraints left nowhere else
+to go. That's the honest way to learn a pattern: meet the problem first, then the name.
+
+If you ended up somewhere else, bring it to your mentor before Part E. Not because it's
+wrong — because the reasoning is the interesting part.
 
 ---
 

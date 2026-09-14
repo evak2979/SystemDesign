@@ -77,15 +77,39 @@ demonstration that a passing test can be worthless, and it costs thirty seconds.
 The brief suggests concrete differences (step size, maximum, whether volume works while
 off) — hold her to them. Two identical implementations teach nothing.
 
-**Run the grep together.** `UniversalRemoteControl` must not contain "Samsung" or "LG":
+### Part D — design it, don't teach it
+
+**She is given no code for the remote.** The brief states the goal, states the one hard
+rule, and asks her how she'd design it. That's deliberate: Part F later checks whether
+she *generalises* the pattern to the battery, and that check is worthless if Part D
+handed her the pattern to copy.
+
+**The brand-name rule is what makes the open question safe.** It quietly rules out the
+most tempting idea — a remote that builds its own television — because any television it
+built would have to be a particular brand. She's left to discover that something has to
+come from outside. The constraint teaches; you don't have to.
 
 ```bash
 grep -inw "samsung\|lg\|sony" SystemDesign.Api/Implementations/UniversalRemoteControl.cs
 ```
 
-No output is the pass. If she's written `if (tv is SamsungTelevision)`, that's the
-teachable moment of the whole stage — it means something belongs on the contract that
-isn't there, and the fix is to change the interface, not to special-case the remote.
+No output is the pass. Run it together. If she's written `if (tv is SamsungTelevision)`,
+that's the teachable moment of the whole stage — it means something belongs on the
+contract that isn't there, and the fix is to change the interface, not to special-case
+the remote.
+
+**Name the pattern only at the end.** The brief does this: once her remote works, it
+tells her that being handed a television from outside is called dependency injection.
+Meet the problem, then the name — not the other way round.
+
+**If she stalls**, don't give her the constructor. Ask instead: *"write me the first
+line of a test that presses power and checks the television turned on."* She can't write
+it without deciding where the television comes from. The test drags the design question
+into the open, which is the honest reason test-first helps with design at all.
+
+**Plausible answers, all fine:** constructor injection (most likely), a `PairWith(tv)`
+method, or a television passed to each button press (clumsy, but she'll discover why).
+What matters is that the television comes from outside and the remote never names a brand.
 
 **Part E is the payoff.** She writes a third TV and the remote drives it unchanged. If
 she leaves Stage 2 with one thing, it's that. Don't let it pass without naming it.
@@ -100,8 +124,8 @@ Part D she actually absorbed, as opposed to copied.
 
 | What she does | What it means |
 |---|---|
-| `new Battery()` inside the remote | She followed the constructor pattern for the TV because she was told to, not because she understood it. The most common outcome, and the most useful one to catch. |
-| Battery passed into the constructor, next to the television | She generalised the pattern herself. This is the good outcome. |
+| `new Battery()` inside the remote | She solved Part D by pattern-matching rather than by understanding — or needed help there and it didn't stick. The most common outcome, and the most useful one to catch. |
+| Battery passed in from outside, next to the television | She generalised her own Part D reasoning to a new problem. This is the outcome the whole stage is built to produce. |
 | An `InsertBattery(...)` method on `IRemoteControl` | Also good, and arguably better — she's modelled the physical act, and can swap a battery at runtime. Ask why she chose it over the constructor. |
 | A setter or method that exists only so tests can drain the battery | She's felt the pain and worked around it instead of fixing it. Worth pulling on — that method is the design asking to be changed. |
 
