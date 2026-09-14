@@ -1,197 +1,195 @@
 # Mentor guide
 
-Your copy. The junior's `README.md` deliberately contains **Stage 1 only**, so there's
-no implementation material for her to read ahead into.
+Your copy. The junior's `README.md` carries Stage 1 only; each later stage is handed
+over as a separate file in `docs/` when she's ready for it.
 
-Hand over each stage as she finishes the one before it — by talking through it, or by
-copying the stage into an issue, or however you prefer.
+| Stage | File | Status |
+|---|---|---|
+| 1 — Contracts | `README.md` | Merged in [#1](https://github.com/evak2979/SystemDesign/pull/1) |
+| 2 — Two TVs and a universal remote, test-first | `docs/STAGE-2.md` | Ready to hand over |
+| 3 — The factory | below | Not written up yet |
+| 4 — Fakes and test doubles | below | Not written up yet |
+| 5 — Over HTTP | below | Not written up yet |
+| 6 — Integration tests | below | Not written up yet |
 
 ---
 
 ## The shape of the whole thing
 
-Each stage exists to make the *next* one feel necessary. That's the design: nothing is
-introduced as good practice, it's introduced because the previous stage got annoying
-without it.
+Each stage exists to make the *next* one feel necessary. Nothing is introduced as good
+practice — it's introduced because the previous stage got annoying without it.
 
 | Stage | She builds | The thing it teaches |
 |---|---|---|
 | 1 | Two interfaces | A contract says *what*, never *how* |
-| 2 | One television | The compiler enforces the contract |
-| 3 | A second television | **The payoff** — same contract, different innards |
-| 4 | A remote control | Code written against a contract doesn't know or care which implementation it got |
-| 5 | A factory | Something has to choose, and only one place should know the concrete types |
-| 6 | A fake television | A fake is just another implementation — which is why interfaces make testing possible |
-| 7 | HTTP endpoints | Wiring it into a real application |
-| 8 | Integration tests | Unit tests prove logic; integration tests prove wiring |
-
-**Stage 3 is the one that matters.** Everything before it can feel like paperwork.
-If she leaves with one thing, it should be the moment in Stage 3 where the remote
-works with a TV it was never written for.
+| 2 | Samsung, LG, a universal remote — test-first | Same contract, different machines; and a test you haven't seen fail isn't a test |
+| 3 | A factory | Something must choose, and only one place should know the concrete types |
+| 4 | A fake television | A fake is just another implementation — which is why interfaces make testing possible |
+| 5 | HTTP endpoints | Wiring it into a real application |
+| 6 | Integration tests | Unit tests prove logic; integration tests prove wiring |
 
 ---
 
-## Stage 2 — One television
+## Where Stage 1 landed
 
-> Create `SonyTelevision` in `Implementations/`, implementing `ITelevision`.
-> Make it actually work — track whether it's on, what channel it's on, what the
-> volume is. Decide what happens if someone changes channel while it's off.
+Her interfaces:
 
-**What it teaches:** the contract has teeth. Delete a method from the class and the
-build fails, with an error naming exactly what's missing.
+```csharp
+public interface ITelevision
+{
+    int Volume { get; }  bool IsOn { get; }
+    void TurnOn(); void TurnOff(); void VolumeUp(); void VolumeDown();
+}
 
-**Worth doing out loud:** have her delete one method and read the compiler error.
-`'SonyTelevision' does not implement interface member 'ITelevision.TurnOn()'` is
-the contract enforcing itself, and seeing it once is worth a paragraph of explanation.
+public interface IRemoteControl
+{
+    bool HasBattery { get; }
+    void PressPower(); void PressVolumeUp(); void PressVolumeDown();
+}
+```
 
-**Watch for:** public methods on `SonyTelevision` that aren't on the interface. Not
-wrong, but worth asking about — anything reached through `ITelevision` can't see them,
-which is a good way to surface what the contract is actually for.
+Worth knowing before you run Stage 2, because three of her choices shape it:
 
----
-
-## Stage 3 — A second television
-
-> Create `SamsungTelevision`, also implementing `ITelevision`. Make it behave
-> *differently* inside — a different volume range, a startup delay, channels
-> numbered from 0 instead of 1. Same promises, different machine.
-
-**What it teaches:** this is the entire point of interfaces, and it's the first stage
-where that's visible.
-
-**The demonstration:** once both exist, write one line somewhere that declares
-`ITelevision tv = new SonyTelevision();`, then change it to `new SamsungTelevision();`.
-Nothing else changes. Ask her *why* that works — the answer is that the variable's type
-is the contract, not the class.
-
-**Common wrong turn:** making the second TV a near-copy of the first. Push for a real
-internal difference. If both work identically, the lesson doesn't land.
+- **`IsOn` and `Volume` are on the contract.** She's given herself observable state,
+  which means every Stage 2 behaviour is assertable without any test gymnastics. This
+  is why Stage 2 tests state rather than printed output.
+- **`PressPower()` is a single toggle**, but the TV has separate `TurnOn()`/`TurnOff()`.
+  The remote has to work out which to call — a small, genuine design problem, and the
+  answer is already on the contract she wrote.
+- **`HasBattery` is a sad path she invented herself.** A dead remote must not change the
+  television. Make her test it; it's the best sad-path case in the exercise and it's hers.
 
 ---
 
-## Stage 4 — The remote control
+## Stage 2 — Two televisions and a universal remote
 
-> Create `BasicRemoteControl` implementing `IRemoteControl`. It takes an `ITelevision`
-> in its constructor and holds onto it. Its job is to translate button presses into
-> calls on whatever TV it was handed.
+Full brief in `docs/STAGE-2.md`. Notes for you:
 
-**What it teaches:** writing code against a contract instead of a concrete class.
+**The two big ideas are red-green-refactor and one-contract-many-machines**, and they
+reinforce each other: TDD forces her to state each behavioural difference between
+Samsung and LG as an assertion before she builds it.
 
-**The key constraint:** `BasicRemoteControl` must not contain the words `Sony` or
-`Samsung` anywhere. If it does, it has been written against an implementation and
-the design has gone wrong. This is a good grep to run together.
+**Insist on the deliberate weak green.** The brief tells her a hardcoded `return true`
+is a legitimate pass. Juniors hate this and skip it. It's the single clearest
+demonstration that a passing test can be worthless, and it costs thirty seconds.
 
-**The question to ask:** "How many televisions does this remote work with?" The answer
-is "all of them, including ones nobody has written yet" — and that's a genuinely
-surprising thing the first time you see it.
+**Watch for Samsung and LG being the same class twice.** This is the main failure mode.
+The brief suggests concrete differences (step size, maximum, whether volume works while
+off) — hold her to them. Two identical implementations teach nothing.
 
-**Vocabulary:** this is dependency injection. Passing a thing's dependencies in from
-outside rather than letting it build its own. Worth naming once she's done it, not before.
+**Run the grep together.** `UniversalRemoteControl` must not contain "Samsung" or "LG":
+
+```bash
+grep -inw "samsung\|lg\|sony" SystemDesign.Api/Implementations/UniversalRemoteControl.cs
+```
+
+No output is the pass. If she's written `if (tv is SamsungTelevision)`, that's the
+teachable moment of the whole stage — it means something belongs on the contract that
+isn't there, and the fix is to change the interface, not to special-case the remote.
+
+**Part E is the payoff.** She writes a third TV and the remote drives it unchanged. If
+she leaves Stage 2 with one thing, it's that. Don't let it pass without naming it.
+
+### On printing
+
+Her brief says: print if you like, but assert on `IsOn` and `Volume`, not on console
+output. Two reasons, if it comes up —
+
+Her contract returns `void`, so asserting on text means either capturing the console or
+changing the interface to return strings. The second undoes the Stage 1 lesson.
+
+And console capture is genuinely unreliable here: `Console.Out` is global static state
+and xUnit runs separate test classes in parallel by default, so `SamsungTelevisionTests`
+and `LgTelevisionTests` would fight over it. Intermittent failures while she's learning
+to trust tests is the worst possible outcome of this stage.
 
 ---
 
-## Stage 5 — The factory
+## Stage 3 — The factory
 
 > Something has to decide *which* television to build. Create `TelevisionFactory` in
-> `Factories/` with a method that takes a brand name and returns an `ITelevision`.
+> `Factories/` with a method taking a brand name and returning an `ITelevision`.
 
-**What it teaches:** concentrating knowledge of concrete types in one place.
-
-**Motivate it properly, or it looks like ceremony.** The setup that makes a factory
+**Motivate it properly or it looks like ceremony.** The setup that makes a factory
 obviously worth having: the brand comes from configuration, so you genuinely don't know
-which TV you need until the program is running. `new SonyTelevision()` can't express
+which TV you need until the program is running. `new SamsungTelevision()` can't express
 that. A factory can.
 
-**The question to ask:** "We're about to add an LG television. Which files change?"
-With a factory: one. Without: every place that ever constructed a TV. That's the
-argument, and it's much better felt than told.
+**Her own Stage 2 sets this up** — she'll have written `new SamsungTelevision()` by hand
+in a dozen tests. The closing line of `STAGE-2.md` points at it deliberately.
 
-**Watch for:** a factory that returns `SonyTelevision` rather than `ITelevision`. It
-compiles, and it quietly undoes the whole exercise — the caller is back to knowing
-the concrete type.
+**The question to ask:** "We're adding a Panasonic. Which files change?" With a factory:
+one. Without: every place that ever constructed a TV.
 
----
+**Watch for:** a factory returning `SamsungTelevision` rather than `ITelevision`. It
+compiles, and it quietly undoes the whole exercise.
 
-## Stage 6 — Unit tests and a fake
-
-> In `SystemDesign.UnitTests`, create `FakeTelevision` implementing `ITelevision`.
-> It doesn't do anything real — it just records what it was asked to do. Then test
-> `BasicRemoteControl` against it.
-
-**What it teaches:** why any of this was worth the trouble.
-
-This is where interfaces and testing connect, and it's the second big moment after
-Stage 3. She wants to test that pressing volume-up asks the TV to turn the volume up.
-She doesn't need a real TV for that — she needs something that can be asked. And she
-already knows how to build one, because a fake is just another implementation.
-
-**The realisation to steer toward:** "I've written three televisions now, and the
-remote can't tell them apart." That sentence means she's understood it.
-
-**The test to insist on:** have her break `BasicRemoteControl` on purpose and watch the
-test go red. A test that passes whether or not the code works is worse than no test.
-(There's a worked example of this in the `ClaudeAutomationDemo` repo, in `Switch.cs`.)
+**Also worth asking:** what should the factory do with an unknown brand? Throw? Return
+null? A default TV? No right answer — but it's a real design decision and she should
+make it deliberately, with a test.
 
 ---
 
-## Stage 7 — Over HTTP
+## Stage 4 — Fakes and test doubles
 
-> Register the factory and a remote in `Program.cs`, and add endpoints —
-> `POST /tv/power`, `POST /tv/channel/{number}`, `GET /tv/status`.
+> In `SystemDesign.UnitTests`, create `FakeTelevision` implementing `ITelevision` that
+> records what it was asked to do. Rewrite the remote's tests against it.
 
-**What it teaches:** how the pieces get assembled in a real application, and that
-`Program.cs` is where the abstract wiring becomes concrete.
+**This is where the awkwardness from Stage 2 pays off.** She tested the remote using a
+real `SamsungTelevision`, which works but has a flaw worth drawing out: when a remote
+test fails, was it the remote or the television? Testing one thing means controlling
+everything around it.
 
-**Worth pointing out:** `Program.cs` and the factory are now the *only* files that
-name a concrete television. Everything else in the codebase talks to `ITelevision`.
-That's the shape of most well-arranged .NET applications.
+**The realisation to steer toward:** "I've written four televisions now, and the remote
+can't tell them apart." That sentence means she's understood the whole thing.
+
+**The point that lands it:** a fake isn't a special testing construct. It's just another
+implementation of a contract she already wrote. She's been able to build one since Stage 2.
+
+**Insist on the deliberate break** — break `UniversalRemoteControl`, watch the test go
+red. Same discipline as Stage 2, and it never stops being worth doing.
 
 ---
 
-## Stage 8 — Integration tests
+## Stage 5 — Over HTTP
 
-> In `SystemDesign.IntegrationTests`, test the endpoints end-to-end using
-> `WebApplicationFactory<Program>` — the pattern is already there in
-> `ScaffoldingTests.cs`.
+> Register the factory and a remote in `Program.cs`, add endpoints — `POST /tv/power`,
+> `POST /tv/volume/up`, `GET /tv/status`.
 
-**What it teaches:** the difference between the two kinds of test, felt rather than defined.
+**Worth pointing out:** `Program.cs` and the factory are now the *only* files naming a
+concrete television. Everything else talks to `ITelevision`. That's the shape of most
+well-arranged .NET applications, and she's arrived at it by necessity rather than
+being told.
 
-| | Unit test (Stage 6) | Integration test (Stage 8) |
+---
+
+## Stage 6 — Integration tests
+
+> Test the endpoints end-to-end with `WebApplicationFactory<Program>` — the pattern is
+> already working in `ScaffoldingTests.cs`.
+
+| | Unit test (Stage 4) | Integration test (Stage 6) |
 |---|---|---|
 | What's real | Just the remote | The whole application |
 | The TV is | A fake she wrote | A real one, chosen by the factory |
 | Speed | Instant | Slower |
 | Catches | Wrong logic | Wrong wiring |
-| When it fails | A rule is wrong | Something isn't plugged in |
 
 **The question that lands it:** "Which kind of test catches it if we forget to register
-the factory in `Program.cs`?" Only the integration test. Every unit test still passes,
-because unit tests build the remote by hand and never go near `Program.cs`. That's the
-clearest statement of why you need both.
+the factory in `Program.cs`?" Only the integration test — every unit test still passes,
+because unit tests build the remote by hand and never go near `Program.cs`.
 
 ---
 
 ## Things to watch for throughout
 
 - **Interfaces that grow.** If `ITelevision` reaches ten members, ask which of them a
-  remote actually needs. Contracts should be small.
-- **`new` outside the factory.** After Stage 5, a `new SonyTelevision()` anywhere else
-  is worth a conversation.
-- **Concrete types in signatures.** `void Connect(SonyTelevision tv)` throws away
+  remote actually needs.
+- **`new` outside the factory.** After Stage 3, worth a conversation every time.
+- **Concrete types in signatures.** `void Connect(SamsungTelevision tv)` throws away
   everything the interface bought.
-- **Tests that can't fail.** Ask for a deliberate break at every testing stage.
-- **"Why not just use the class directly?"** This is the right question and she should
-  ask it. The honest answer for a one-TV program is: you shouldn't. Interfaces pay for
-  themselves at the second implementation — which is exactly why Stage 3 exists.
-
----
-
-## A note on ordering
-
-The stages run interface → implementation. If she stalls in Stage 1 — staring at an
-empty file, unsure what a TV "should" do — the other order works too: let her write
-`SonyTelevision` as a plain class with no interface, then `SamsungTelevision`, then
-point out how much of the two are the same shape and extract `ITelevision` from them.
-
-Same destination. Some people need to see two concrete things before the abstraction
-means anything. Switch if it's not landing; don't switch pre-emptively.
+- **Tests that can't fail.** Ask for a deliberate break at every testing stage. There's
+  a worked happy-path/sad-path example in the `ClaudeAutomationDemo` repo, `Switch.cs`.
+- **"Why not just use the class directly?"** The right question, and she should ask it.
+  The honest answer for a one-TV program is: you shouldn't. Interfaces pay for themselves
+  at the second implementation — which is why Stage 2 builds two.

@@ -150,3 +150,15 @@ Seriously. Stage 2 is about building a television, and it will be much more usef
 to you after you've argued about the questions above with whoever gave you this repo.
 
 Tell them you've finished Stage 1 and they'll take you through what's next.
+
+---
+
+## Stages
+
+Each one is unlocked when you've finished the one before it. Don't read ahead — every
+stage is written assuming you've felt the problem the previous one leaves you with.
+
+| | | |
+|---|---|---|
+| **Stage 1** | Write the contracts | above |
+| **Stage 2** | Build two televisions and a universal remote, test-first | [docs/STAGE-2.md](docs/STAGE-2.md) |
