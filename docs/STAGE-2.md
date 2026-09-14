@@ -1,10 +1,14 @@
-# Stage 2 — Build two televisions and a universal remote, test-first
+# Stage 2 — Two televisions, and a remote you design yourself
 
 Stage 1 is merged. Your contracts are good: they're small, they describe behaviour
 rather than mechanism, and `ITelevision` doesn't mention a brand anywhere. That last
 one was the real question and you got it right.
 
-Now you build things that fulfil those contracts — and you write the tests **first**.
+This stage has two halves:
+
+- **A–C: build two televisions, test-first.** Learn how a test gets hold of a real
+  class and checks what it actually does.
+- **D–E: design the universal remote.** No instructions for this one. That's the point.
 
 ---
 
@@ -59,17 +63,52 @@ public class SamsungTelevisionTests
     [Fact]
     public void TurnOn_WhenOff_TurnsTheTelevisionOn()
     {
-        var tv = new SamsungTelevision();
+        // Arrange
+        var sut = new SamsungTelevision();
 
-        tv.TurnOn();
+        // Act
+        sut.TurnOn();
 
-        Assert.True(tv.IsOn);
+        // Assert
+        Assert.True(sut.IsOn);
     }
 }
 ```
 
 Run `dotnet test SystemDesign.sln`. It won't compile — `SamsungTelevision` doesn't
 exist. **That's red.** Read the error; it names exactly what's missing.
+
+### What `sut` means, and why it isn't called `tv`
+
+**SUT** stands for **System Under Test** — the one object this test is actually about.
+
+Right now there's only one object in the test, so the name looks like fuss. It won't
+stay that way. Soon a test will involve a remote *and* a television, and only one of
+them is the thing being tested — the other is just there to make the test possible.
+Naming the subject `sut` means anyone reading can see in one second which is which,
+instead of working it out from the assertions.
+
+It's a convention, not a rule. The compiler doesn't care. Use it anyway — it's common
+in professional codebases, and it makes your tests readable to people who have never
+seen your code.
+
+### What a test actually is
+
+Nothing magic is happening here. Look at what that test does:
+
+1. It creates a real `SamsungTelevision` — the same class the application uses. Not a
+   copy, not a special test version. The real one.
+2. It calls a real method on it.
+3. It checks a real property afterwards.
+
+`[Fact]` marks a method as something the test runner should execute. `Assert.True`
+throws an exception when what it's given is false, and a test that throws is a test that
+failed. That is the entire mechanism.
+
+A test is ordinary code that uses your class the way the rest of the program will, and
+complains when it misbehaves. The three comments — **Arrange**, **Act**, **Assert** —
+name the three things every test does: set up the world, do the one thing under test,
+state what must now be true.
 
 ### Green
 
@@ -78,7 +117,7 @@ thing that passes. Genuinely the smallest — if `IsOn` returning a hardcoded `t
 it pass, that is a legitimate green.
 
 That feels like cheating. It isn't, and it's worth understanding why: a hardcoded `true`
-passing tells you your **test is too weak**. The fix is another test — one that this
+passing tells you your **test is too weak**. The fix is another test — one this
 implementation can't pass. Write `TurnOff_WhenOn_TurnsTheTelevisionOff` and the shortcut
 dies immediately. This is the loop doing its job.
 
@@ -109,23 +148,23 @@ television twice and learned nothing. Give them genuinely different innards. Sug
 Every one of those is checkable through `Volume` and `IsOn`, which your own interface
 already exposes. Write the test first, every time.
 
-Cases worth covering for each TV — write these as separate tests, one behaviour each:
+Cases worth covering for each television — separate tests, one behaviour each:
 
 - Turning on when already on (does anything break?)
 - Volume up at maximum — does it stop, or keep climbing?
 - Volume down at zero — can it go negative? *Should* it?
 - Turning off and on again — what happens to the volume?
 
-Those last ones are **sad paths** — the cases where something is at a limit or being
-asked to do something odd. They're where bugs live.
+Those last ones are **sad paths** — where something is at a limit, or being asked to do
+something odd. They're where bugs live.
 
 ### Printing
 
-If you'd like to see something happen, put a `Console.WriteLine($"Samsung: power on")`
-inside the methods. That's fine — it's a nice way to watch the thing work when you run it.
+If you'd like to see something happen, put a `Console.WriteLine("Samsung: power on")`
+inside the methods. That's fine — a nice way to watch the thing work when you run it.
 
 **But don't write tests that check what was printed.** Test `IsOn` and `Volume` instead.
-Printed text is a side effect; state is the thing you actually promised in your contract.
+Printed text is a side effect; state is what you actually promised in your contract.
 Chasing console output in tests gets fragile fast, and you'd be testing the decoration
 rather than the behaviour.
 
@@ -164,25 +203,12 @@ Some things to judge your ideas against:
 
 - **Can you test it?** You'll want a test that presses a button and checks the television
   changed. Whatever you design has to let a test decide which television is involved.
-- **Does it survive a new brand?** A television invented next year, by someone who's
+- **Does it survive a new brand?** A television invented next year, by someone who has
   never seen your remote — does your design still work, with no changes to the remote?
-- **Can one remote drive a different television later?** Should it be able to? That's
-  a design decision, not a fact — but decide it deliberately rather than by accident.
+- **Can one remote drive a different television later?** Should it be able to? That's a
+  design decision, not a fact — but decide it deliberately rather than by accident.
 - **Does the remote need to know anything about the television beyond the contract?**
   If yes, that's worth a conversation with your mentor before you build it.
-
-### Let the test tell you
-
-Here's the useful trick, and it's the real reason test-first helps with design rather
-than just catching bugs:
-
-**Write the test before you write the class.** In that test you'll have to create a
-`UniversalRemoteControl` and somehow arrange for it to have a television. The moment
-you type that line, you're designing — because a test is the first thing that ever has
-to *use* what you built.
-
-If the test is awkward to write, your design is awkward to use. You'll have found that
-out in thirty seconds instead of a fortnight.
 
 ### Things to work out along the way
 
@@ -195,108 +221,32 @@ out in thirty seconds instead of a fortnight.
 That battery case is a proper sad path, and a good one: **pressing a button on a dead
 remote must not change the television.** Write that test.
 
-### Testing the remote
-
-Your remote tests need *a* television. For now, use a real `SamsungTelevision` — press
-the button, assert the television changed. That's the straightforward route and it works.
-
-Keep a note of anything that feels awkward about it. Stage 4 is about exactly that
-awkwardness, and it'll mean more if you've felt it first.
-
-### When it's working
-
-Go and look at what you ended up with, and at how the television gets into the remote.
-
-If your answer was "it's handed one, from outside" — that has a name. It's called
-**dependency injection**, it is one of the most common patterns in professional .NET
-code, and you just arrived at it on your own because the constraints left nowhere else
-to go. That's the honest way to learn a pattern: meet the problem first, then the name.
-
-If you ended up somewhere else, bring it to your mentor before Part E. Not because it's
-wrong — because the reasoning is the interesting part.
-
 ---
 
-## Part E — The finish
+## Part E — Prove it's universal
 
-When both televisions and the remote are done and green, do this:
+A design isn't universal because you named the class `UniversalRemoteControl`. Prove it:
 
 1. Write a **third** television. Call it `SonyTelevision`. Any behaviour you like.
-2. Point your existing `UniversalRemoteControl` at it and write a test.
+2. Point your existing remote at it and write a test.
 3. **Change nothing in `UniversalRemoteControl`.**
 
 It will work. A remote you finished writing before Sony existed will drive a Sony.
 
-That is the entire reason interfaces exist, and everything in Stage 1 was groundwork
-for this moment. Sit with it — if it seems obvious now, that's the point.
+That is the entire reason interfaces exist, and everything in Stage 1 was groundwork for
+this moment. Sit with it — if it seems obvious now, that's the point.
 
----
+### Then go and look at what you built
 
-## Part F — Someone wants to change the battery
+Look at how the television gets into the remote.
 
-Your remote works. Now the requirements change, which is what requirements do.
+If your answer was "it's handed one, from outside" — that has a name. It's called
+**dependency injection**, it's one of the most common patterns in professional .NET code,
+and you arrived at it on your own because the constraints left nowhere else to go. That's
+the honest way to learn a pattern: meet the problem first, then the name.
 
-> **The remote's battery can be taken out, put in, and runs down as it's used.**
-> A remote with no battery in it does nothing. A remote whose battery is flat
-> does nothing either.
-
-That's the whole brief. How you build it is the exercise.
-
-### The one rule
-
-**Write the test first.** As always — but here it matters more than usual, because
-the test is what will tell you whether your design is any good.
-
-Start with this one, in words: *"a remote with a flat battery does not change the
-television."* You already wrote something close to it in Part D, using `HasBattery`.
-
-Now try to write it again, for real. Somewhere in that test you will need a flat
-battery. **Pay close attention to how easy or hard that is to arrange.** If you find
-yourself unable to set up the situation you want to test, that is not a problem with
-the test. It is the design telling you something, and the whole point of this part is
-to hear it.
-
-### Questions to answer before you write the code
-
-Write your answers down — they matter more than the code, and your mentor will ask.
-
-1. **Where does the battery come from?** You already solved this exact problem once
-   in Part D, for the television. Does the same answer apply here? Why, or why not?
-2. **Should `Battery` be an interface, or an ordinary class?** Be careful — this is
-   not automatically "interface". Use the test you learned in Part C:
-
-   > An interface earns its place when there is more than one kind of the thing,
-   > behaving differently.
-
-   So: is there a second kind of battery? Does a battery *do* anything, or does it
-   just hold a number? If it only holds a charge level and nothing else, it might
-   be a **model**, not an interface — and wrapping it in one would be exactly the
-   ceremony you were warned about.
-
-   Either answer can be right. An answer you can't justify can't.
-3. **Does `IRemoteControl` need to change?** Is "putting a battery in" something you
-   can do to *any* remote control — in which case it belongs on the contract — or is
-   it something you do once when the remote is built? Both are defensible designs,
-   and they lead to different code.
-4. **What does a flat battery do to `HasBattery`?** That property is already on your
-   contract. Does it still mean the same thing now that batteries run down?
-
-### Things that should make you suspicious
-
-- If `UniversalRemoteControl` contains `new Battery()`, ask yourself how a test is
-  supposed to make that battery go flat.
-- If your answer involves adding a method whose only purpose is to let a test change
-  something, stop. Tests shouldn't need special access. Needing it means the thing
-  should have come from outside in the first place.
-- If the remote now has *two* things coming in from outside, that's not a problem —
-  that's normal, and it has a name you already met in Part D.
-
-### You're done with this part when
-
-- A flat battery genuinely stops the remote working, proven by a test.
-- Setting up a flat battery in a test is *easy*, and doesn't require any method that
-  exists only for testing.
-- You can explain your answer to question 2 without using the word "best practice".
+If you ended up somewhere else, bring it to your mentor. Not because it's wrong — because
+the reasoning is the interesting part.
 
 ---
 
@@ -305,13 +255,12 @@ Write your answers down — they matter more than the code, and your mentor will
 - `dotnet test SystemDesign.sln` is green.
 - Every test you wrote, you saw fail first.
 - `Implementations/` has three televisions and one remote.
-- Samsung and LG genuinely behave differently — someone reading the tests can tell
-  them apart without looking at the classes.
-- `UniversalRemoteControl` contains no brand name at all.
-- A flat battery stops the remote working, and that's covered by a test that was
-  straightforward to set up.
+- Samsung and LG genuinely behave differently — someone reading the tests can tell them
+  apart without looking at the classes.
+- `UniversalRemoteControl` contains no brand name at all, and drives the Sony it was
+  never written for.
+- You can explain what `sut` stands for and why a test bothers naming one.
 - You can explain why a hardcoded `return true` passing a test is useful information.
-- You can justify whether the battery is an interface or a plain class — either way.
 
 Open a PR when you get there.
 
@@ -319,8 +268,9 @@ Open a PR when you get there.
 
 ## One last thing
 
-You'll notice you've been writing `new SamsungTelevision()` by hand in every test, and
-you'd have to do the same in the real application. Something, somewhere, has to decide
-*which* television to build — and right now that decision would be scattered everywhere.
+Every test you've written now passes. That's a nice feeling, and it's also the least
+informative state a test suite is ever in — all it tells you is that nothing has changed
+since you last looked.
 
-Keep that thought. It's Stage 3.
+In Stage 3, the requirements change, and a lot of that green goes red at once. What you
+do next is the actual skill.
