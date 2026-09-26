@@ -8,9 +8,9 @@ public class UniversalRemoteControlTests
     public void PressPower_WhenTVIsOffAndHasBattery_TurnTVOn()
     {
         var tv = new SonyTelevision() { IsOn = false };
-        var remote = new UniversalRemoteControl(tv) { HasBattery = true };
+        var sut = new UniversalRemoteControl(tv) { HasBattery = true };
 
-        remote.PressPower();
+        sut.PressPower();
         
         Assert.True(tv.IsOn);
     }
@@ -19,9 +19,9 @@ public class UniversalRemoteControlTests
     public void PressPower_WhenTVIsOffAndHasNoBattery_DoesNothing()
     {
         var tv = new SonyTelevision();
-        var remote = new UniversalRemoteControl(tv){ HasBattery = false };
+        var sut = new UniversalRemoteControl(tv){ HasBattery = false };
 
-        remote.PressPower();
+        sut.PressPower();
         
         Assert.False(tv.IsOn);
     }
@@ -30,9 +30,9 @@ public class UniversalRemoteControlTests
     public void PressPower_WhenTVIsOnAndHasBattery_TurnTVOff()
     {
         var tv = new SonyTelevision() { IsOn = true };
-        var remote = new UniversalRemoteControl(tv) { HasBattery = true };
+        var sut = new UniversalRemoteControl(tv) { HasBattery = true };
 
-        remote.PressPower();
+        sut.PressPower();
         
         Assert.False(tv.IsOn);
     }
@@ -41,10 +41,10 @@ public class UniversalRemoteControlTests
     public void PressVolumeUp_WhenHasBattery_IncreasesTVVolume()
     {
         var tv = new SonyTelevision();
-        var remote = new UniversalRemoteControl(tv){ HasBattery = true };
+        var sut = new UniversalRemoteControl(tv){ HasBattery = true };
         
-        remote.PressPower();
-        remote.PressVolumeUp();
+        sut.PressPower();
+        sut.PressVolumeUp();
         
         Assert.Equal(25, tv.Volume);
     }
@@ -53,11 +53,11 @@ public class UniversalRemoteControlTests
     public void PressVolumeUp_WhenNoBattery_DoNothing()
     {
         var tv = new SonyTelevision();
-        var remote = new UniversalRemoteControl(tv){ HasBattery = true };
+        var sut = new UniversalRemoteControl(tv){ HasBattery = true };
         
-        remote.PressPower();
-        remote.HasBattery = false;
-        remote.PressVolumeUp();
+        sut.PressPower();
+        sut.HasBattery = false;
+        sut.PressVolumeUp();
         
         Assert.Equal(20, tv.Volume);
     }

@@ -80,6 +80,7 @@ public class LGTelevisionTests
     {
         var sut = new LGTelevision();
         
+        sut.TurnOn();
         sut.VolumeDown();
         
         Assert.Equal(0, sut.Volume);
@@ -103,10 +104,14 @@ public class LGTelevisionTests
     {
         var sut = new LGTelevision();
         
+        sut.TurnOn();
+        sut.VolumeUp(); // volume = 2
+        sut.VolumeUp(); // volume = 4
         sut.TurnOff();
         sut.VolumeUp();
         
-        Assert.Equal(0, sut.Volume);
+        Assert.False(sut.IsOn);
+        Assert.Equal(4, sut.Volume);
     }
     
     [Fact]
@@ -114,9 +119,13 @@ public class LGTelevisionTests
     {
         var sut = new LGTelevision();
         
+        sut.TurnOn();
+        sut.VolumeUp(); // volume = 2
+        sut.VolumeUp(); // volume = 4
         sut.TurnOff();
         sut.VolumeDown();
         
-        Assert.Equal(0, sut.Volume);
+        Assert.False(sut.IsOn);
+        Assert.Equal(4, sut.Volume);
     }
 }

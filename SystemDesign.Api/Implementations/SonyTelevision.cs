@@ -5,7 +5,7 @@ namespace SystemDesign.Api.Implementations;
 public class SonyTelevision : ITelevision
 {
     public int Volume { get; private set; } = 20;
-    public int MaxVolume => 50;
+    private const int MaxVolume = 50;
     public bool IsOn { get; set; }
     
     public void TurnOn()
