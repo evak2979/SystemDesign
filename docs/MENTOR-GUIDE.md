@@ -6,8 +6,8 @@ over as a separate file in `docs/` when she's ready for it.
 | Stage | File | Status |
 |---|---|---|
 | 1 — Contracts | `README.md` | Merged in [#1](https://github.com/evak2979/SystemDesign/pull/1) |
-| 2 — Two televisions, and designing the remote | `docs/STAGE-2.md` | Ready to hand over |
-| 3 — The requirements change | below | Sketched, brief not written yet |
+| 2 — Two televisions, and designing the remote | `docs/STAGE-2.md` | Merged in [#2](https://github.com/evak2979/SystemDesign/pull/2) |
+| 3 — The requirements change | `docs/STAGE-3.md` | Ready to hand over |
 | 4 — Stubs, mocks, and the battery | below | Sketched, brief not written yet |
 | 5 — The factory | below | Sketched |
 | 6 — Over HTTP | below | Sketched |
@@ -118,28 +118,92 @@ she leaves Stage 2 with one thing, it's that. Don't let it pass without naming i
 
 ---
 
+## Where Stage 2 landed
+
+Merged in [#2](https://github.com/evak2979/SystemDesign/pull/2), after one round of review.
+What's worth knowing going into Stage 3:
+
+- **Constructor injection, arrived at unprompted.** `UniversalRemoteControl(ITelevision)`,
+  no brand names anywhere, drives the Sony unchanged. Part E landed.
+- **She fixed two tests that passed for the wrong reason.** Her LG "at zero" and "while
+  off" tests were each covered by the other's guard. She now turns the TV on and raises
+  the volume first, so each test isolates its own check.
+- **She dropped `MaxVolume` from `ITelevision`** when asked what used it. It's now a
+  `private const` in each class. Good instinct: the contract only grows for a consumer.
+- **The limit checks still use `!=`, not `<`.** `if (Volume != MaxVolume) Volume += step`
+  only works when the maximum is a multiple of the step. Deliberately left in: Stage 3 is
+  built to catch it (see below). Don't mention it before she runs the tests.
+- **Still open, for Stage 4:** `IsOn` has a public setter on every TV, and the remote's
+  `HasBattery` is a public settable property that defaults to `false`. The remote tests
+  lean on both. The stub television and the battery work will surface them naturally.
+- **Small leftovers:** `VolumeUp_WhenOn_DecreasesVolumeByTwo` actually tests
+  `VolumeDown`, and a few names say `DoNothing` for `DoesNothing`. Stage 3 asks her to
+  fix names on any test she touches, which covers the first.
+
+---
+
 ## Stage 3 — The requirements change
 
-> The product owner has changed their mind. Samsung now maxes out at 50, LG steps by 1,
-> and both televisions must allow volume changes while switched off.
+Full brief in `docs/STAGE-3.md`. The change she's given:
+
+> 1. Samsung's maximum volume is now 50.
+> 2. LG now steps volume by 3.
+> 3. Both Samsung and LG must allow volume changes while switched off.
 >
-> Make the change. Do not touch a single test until you have run them.
+> Sony is unchanged.
 
 **What it teaches:** what a failing test is *for*. Everything up to now has trained the
 green. This stage trains the red.
 
-She will see something like fifteen failures at once, and the instinct is panic followed
-by deleting tests until it's quiet. The whole stage is about replacing that instinct with
-a better one.
+### Why "LG steps by 3" and not "by 1"
+
+The original sketch had LG stepping by 1. Against her actual code, that change can't
+produce a real bug: every step of 1 lands exactly on 50, so `!=` still works and every red
+test is simply out of date. The stage would teach "update the tests" and nothing else.
+
+**Step 3 doesn't divide 50.** Going up, LG goes 48 → 51 → 54 → … and never stops. Her
+existing `VolumeUp_WhenAtMaxVolume_StopsIncreasingVolume` presses up 26 times and expects
+50. That expectation is *still correct* under the new requirements — the maximum didn't
+change — so when it fails, the only honest reading is that the code is broken. That's the
+row of the table below that the whole stage is built around, and it's her own test from
+Stage 2 doing the catching.
+
+### What she'll probably see
+
+Assuming she makes the change the obvious way (change the step and the maximum, drop the
+`IsOn` check from LG's volume methods, leave the `!=` alone), seven failures:
+
+| Test | Why it's red | Verdict |
+|---|---|---|
+| Samsung `VolumeUp_WhenAtMaxVolume_StopsIncreasingVolume` | Expects 100; max is now 50 | Test out of date |
+| LG `TurnOn_WhenAlreadyOn_RemainsOnAndVolumeUnaffected` | Expects 2; one step is now 3 | Test out of date |
+| LG `VolumeUp_WhenOn_IncreasesVolumeByTwo` | Expects 2; now 3 (and the name is wrong) | Test out of date |
+| LG `VolumeUp_WhenOn_DecreasesVolumeByTwo` | Expects 2; now 3 (misnamed since Stage 2) | Test out of date |
+| LG `VolumeUp_WhenOff_DoNothing` | Volume now changes while off | Test out of date — the behaviour itself is gone |
+| LG `VolumeDown_WhenOff_DoNothing` | Same | Test out of date |
+| LG `VolumeUp_WhenAtMaxVolume_StopsIncreasingVolume` | Volume sails past 50 | **Code broken** |
+
+(The exact count depends on how she edits. What matters is the mix.)
+
+**The two "while off" tests are the interesting out-of-date ones.** It isn't a number to
+update: the behaviour they protect no longer exists. The right move is to *replace* them
+with tests for the new behaviour ("volume up while off changes the volume"), not to tweak
+the expected value until they pass. If she edits `Assert.Equal(4, …)` to `Assert.Equal(7, …)`
+and keeps the name `…_DoNothing`, that's the trap in miniature.
+
+**Samsung's max test is the subtle one.** It presses up 90 times from 10 and expects 100.
+She'll likely change the 100 to 50 and leave 90 presses. That works (it clamps), but ask
+her whether 90 is still the number that expresses "one past the maximum". It isn't: that's
+now 40. Tests should say what they mean.
 
 ### How to run it
 
 1. **Make her run the suite before changing any test.** The failure list is the point —
    it's a precise, free report of everything that requirement touched. Have her read it
-   out loud. That list would have cost a week of manual clicking to produce.
+   out loud.
 2. **One failure at a time, and the question for each is the same:** *is this test wrong
-   now, or is my code wrong now?* Those are completely different situations that look
-   identical from the console.
+   now, or is my code wrong now?* The brief asks her to fill in a table in the PR
+   description before changing anything. Hold her to it.
 3. **Only then update the tests** — to match the new requirement, deliberately, one by
    one.
 
@@ -148,12 +212,13 @@ a better one.
 | The test says | Reality | What it means | What to do |
 |---|---|---|---|
 | Max volume is 100 | The requirement is now 50 | The test is out of date | Update the test — it's describing a world that no longer exists |
-| Volume ignored while off | The requirement is now "allowed" | Test is out of date | Update the test |
+| Volume ignored while off | The requirement is now "allowed" | The test is out of date | Replace it with a test for the new behaviour |
 | Volume stops at the maximum | It now climbs past it | **The code is broken** | Fix the code. The test just caught a real bug |
 
-That third row is the one to engineer deliberately. If changing the maximum quietly
-breaks the clamping, a test she wrote days ago catches it — and that is the entire value
-proposition of a test suite, arriving unprompted.
+**If she spots the `!=` bug while making the change and fixes it before running the
+tests,** that's a good outcome, not a spoiled one. Ask her how she'd have found it
+otherwise, and whether a test would have caught it. The Part D exercise below still
+gives her the "caught by my own test" moment.
 
 **Worth saying out loud afterwards:** every one of those failures was a message from a
 past version of herself about something she'd otherwise have shipped.
@@ -162,17 +227,35 @@ past version of herself about something she'd otherwise have shipped.
 
 **Updating a test until it passes without understanding why it failed.** It's fast, it
 feels productive, and it is how people delete their own safety net. If she changes an
-expected value and can't say in a sentence why the old one was wrong, she's guessing.
+expected value and can't say in a sentence why the old one was wrong, she's guessing. The
+most likely place for this: copying 78 (or whatever LG's overshoot lands on) into the LG
+max test. If she does that, the table in her PR will say "test wrong" for a test whose name
+is "stops increasing volume" — point at the name.
 
-A good challenge: after all the tests are green again, ask her to break the clamping
-logic on purpose. If nothing goes red, she has "fixed" a test that was protecting
-something real.
+### Part D — the deliberate break
 
-### Optional, if she's flying
+The brief has her break a guard on purpose once everything is green. **There's a gap
+waiting to be found:** the same `!=` bug exists at the bottom. Stepping down by 3 from 50
+goes 2 → −1 → −4 → … and her "at zero" test doesn't catch it, because it starts at 0 and
+never steps across it. If she fixes the top with `<` but leaves `!= 0` at the bottom, all
+tests still pass.
 
-Have her make the change *without* looking at the tests first, then run them. The
-surprise of being caught by her own past work is the most memorable version of this
-lesson.
+If she doesn't find it herself, ask: *"What's the lowest volume LG can reach from 50?"*
+Then have her write the test, and watch it fail first.
+
+### The remote question
+
+The brief asks why the remote's tests didn't go red. They use a Sony, and Sony didn't
+change. The good answer has two halves:
+
+- **Good news:** the remote doesn't depend on how any particular TV behaves. A change to
+  Samsung or LG can't break it. That's the interface doing its job.
+- **Hiding something:** the remote tests pass or fail based on *Sony's* behaviour (they
+  assert `25`, Sony's +5 step). If Sony's step changed, the remote tests would go red even
+  though the remote is fine. She's testing two things at once.
+
+The second half is the doorway to Stage 4. Don't walk her through it; let her answer
+stand, and open Stage 4 with it.
 
 ---
 
