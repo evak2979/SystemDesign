@@ -112,7 +112,7 @@ public class LGTelevisionTests
         Assert.False(sut.IsOn);
         Assert.Equal(9, sut.Volume);
     }
-    
+
     [Fact]
     public void VolumeDown_WhenOff_DecreasesVolume()
     {
