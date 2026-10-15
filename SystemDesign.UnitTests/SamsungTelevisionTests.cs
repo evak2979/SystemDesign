@@ -59,7 +59,7 @@ public class SamsungTelevisionTests
             sut.VolumeUp();
         sut.VolumeUp();
         
-        Assert.Equal(100, sut.Volume);
+        Assert.Equal(50, sut.Volume);
     }
 
     [Fact]

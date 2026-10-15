@@ -5,7 +5,7 @@ namespace SystemDesign.Api.Implementations;
 public class SamsungTelevision : ITelevision
 {
     public int Volume { get; private set; } = 10;
-    private const int MaxVolume = 100;
+    private const int MaxVolume = 50;
     public bool IsOn { get; set; }
 
     public void TurnOn()
