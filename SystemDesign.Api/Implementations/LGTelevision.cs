@@ -10,10 +10,6 @@ public class LGTelevision : ITelevision
 
     public void TurnOn()
     {
-        if (!IsOn)
-        {
-            Volume = 0;
-        }
         IsOn = true;
     }
 
@@ -24,17 +20,11 @@ public class LGTelevision : ITelevision
 
     public void VolumeUp()
     {
-        if (Volume != MaxVolume && IsOn)
-        {
-            Volume += 2;
-        }
+        Volume = Math.Min(Volume + 3, MaxVolume);
     }
 
     public void VolumeDown()
     {
-        if (Volume != 0 && IsOn)
-        {
-            Volume -= 2;
-        }
+        Volume = Math.Max(Volume - 3, 0);
     }
 }

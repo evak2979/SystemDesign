@@ -35,22 +35,22 @@ public class LGTelevisionTests
         sut.TurnOn();
 
         Assert.True(sut.IsOn);
-        Assert.Equal(2, sut.Volume);
+        Assert.Equal(3, sut.Volume);
     }
     
     [Fact]
-    public void VolumeUp_WhenOn_IncreasesVolumeByTwo()
+    public void VolumeUp_WhenOn_IncreasesVolumeByThree()
     {
         var sut = new LGTelevision();
 
         sut.TurnOn();
         sut.VolumeUp();
 
-        Assert.Equal(2, sut.Volume);
+        Assert.Equal(3, sut.Volume);
     }
     
     [Fact]
-    public void VolumeUp_WhenOn_DecreasesVolumeByTwo()
+    public void VolumeDown_WhenOn_DecreasesVolumeByThree()
     {
         var sut = new LGTelevision();
 
@@ -59,7 +59,7 @@ public class LGTelevisionTests
         sut.VolumeUp();
         sut.VolumeDown();
 
-        Assert.Equal(2, sut.Volume);
+        Assert.Equal(3, sut.Volume);
     }
     
     [Fact]
@@ -85,47 +85,46 @@ public class LGTelevisionTests
         
         Assert.Equal(0, sut.Volume);
     }
-
+    
     [Fact]
-    public void TurnOn_WhenOff_ResetsVolume()
+    public void TurnOff_WhenOn_DoesNotChangeVolume()
     {
         var sut = new LGTelevision();
         
         sut.TurnOn();
         sut.VolumeUp();
         sut.TurnOff();
-        sut.TurnOn();
 
-        Assert.Equal(0, sut.Volume);
+        Assert.Equal(3, sut.Volume);
     }
 
     [Fact]
-    public void VolumeUp_WhenOff_DoNothing()
+    public void VolumeUp_WhenOff_IncreasesVolume()
     {
         var sut = new LGTelevision();
         
         sut.TurnOn();
-        sut.VolumeUp(); // volume = 2
-        sut.VolumeUp(); // volume = 4
+        sut.VolumeUp(); // volume = 3
+        sut.VolumeUp(); // volume = 6
         sut.TurnOff();
-        sut.VolumeUp();
+        sut.VolumeUp(); // volume = 9
         
         Assert.False(sut.IsOn);
-        Assert.Equal(4, sut.Volume);
+        Assert.Equal(9, sut.Volume);
     }
     
     [Fact]
-    public void VolumeDown_WhenOff_DoNothing()
+    public void VolumeDown_WhenOff_DecreasesVolume()
     {
         var sut = new LGTelevision();
         
         sut.TurnOn();
-        sut.VolumeUp(); // volume = 2
-        sut.VolumeUp(); // volume = 4
+        sut.VolumeUp(); // volume = 3
+        sut.VolumeUp(); // volume = 6
         sut.TurnOff();
-        sut.VolumeDown();
+        sut.VolumeDown(); // volume = 3
         
         Assert.False(sut.IsOn);
-        Assert.Equal(4, sut.Volume);
+        Assert.Equal(3, sut.Volume);
     }
 }
