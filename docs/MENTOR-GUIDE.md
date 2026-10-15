@@ -7,8 +7,8 @@ over as a separate file in `docs/` when she's ready for it.
 |---|---|---|
 | 1 — Contracts | `README.md` | Merged in [#1](https://github.com/evak2979/SystemDesign/pull/1) |
 | 2 — Two televisions, and designing the remote | `docs/STAGE-2.md` | Merged in [#2](https://github.com/evak2979/SystemDesign/pull/2) |
-| 3 — The requirements change | `docs/STAGE-3.md` | Ready to hand over |
-| 4 — Stubs, mocks, and the battery | below | Sketched, brief not written yet |
+| 3 — The requirements change | `docs/STAGE-3.md` | Merged in [#3](https://github.com/evak2979/SystemDesign/pull/3) |
+| 4 — Stubs, mocks, and the battery | `docs/STAGE-4.md` | Ready to hand over |
 | 5 — The factory | below | Sketched |
 | 6 — Over HTTP | below | Sketched |
 | 7 — Integration tests | below | Sketched |
@@ -259,13 +259,49 @@ stand, and open Stage 4 with it.
 
 ---
 
+## Where Stage 3 landed
+
+Merged in [#3](https://github.com/evak2979/SystemDesign/pull/3). The strongest PR so far.
+
+- **Her Part B table was exactly right.** Seven failures, six "test wrong", and the LG
+  max-volume test marked "code wrong" with the right reason: the maximum is still 50, the
+  code just can't land on it in steps of 3. She fixed the code and left that test alone.
+- **She replaced the `!=` checks with `Math.Min` / `Math.Max`**, which also closed the
+  "below zero" gap at the bottom before Part D could find it.
+- **She replaced the "while off" tests rather than patching them**, with new names
+  (`VolumeUp_WhenOff_IncreasesVolume`) — she avoided the Stage 3 trap.
+- **Open item: she removed LG's reset-to-0-on-power-on.** No requirement asked for it,
+  and its test (`TurnOn_WhenOff_ResetsVolume`) was replaced while it was still green.
+  Merged anyway; worth a short chat when you open Stage 4 about raising product changes
+  rather than making them quietly.
+- **Her remote answer was half there:** the remote stayed green because it only uses the
+  Sony. The missing half — the tests assert `25`, which is the *Sony's* behaviour — is
+  exactly where Stage 4 opens.
+- **Still present:** the public `IsOn` setter on every TV, the public `HasBattery` setter
+  on the remote (defaulting to `false`), and Samsung's max test still pressing up 90 times.
+
+---
+
 ## Stage 4 — Stubs, mocks, and the battery
 
-Two things that turn out to be the same thing, which is why they share a stage.
+Full brief in `docs/STAGE-4.md`. Two things that turn out to be the same thing, which is
+why they share a stage.
+
+**How the brief runs:** A shows her the `25` in her own remote test. B has her hand-write
+a `StubTelevision` in the test project. C rewrites the remote tests against it (asserting
+on what the remote *asked for*). D gives the vocabulary, then introduces Moq — she rewrites
+two tests with it and compares. E is the battery, with goals and judging questions but no
+design.
+
+**On Moq:** the brief links Fowler's *Mocks Aren't Stubs* (ideas), Round The Code's
+Moq + xUnit walkthrough (hands-on), and the Moq Quickstart (reference). If she or you
+prefer it, NSubstitute is the main alternative and the lesson is identical. If she asks
+which word fits her `StubTelevision`: if her tests check calls on it, it's really a
+hand-written **mock**. Let her reach that herself — the brief asks the question.
 
 ### Part one — testing the remote without a television
 
-In Stage 2 she tested the remote using a real `SamsungTelevision`. That works, and it
+In Stage 2 she tested the remote using a real `SonyTelevision`. That works, and it
 has a flaw worth drawing out: **when that test fails, was it the remote or the
 television?** She's testing two things and only one of them is the subject.
 
